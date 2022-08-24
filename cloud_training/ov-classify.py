@@ -4,6 +4,7 @@ from openvino.runtime import Core
 import cv2
 import numpy as np
 import time
+import os
 
 
 
@@ -54,8 +55,26 @@ def main(args):
     index = np.argmax(results)
     if index == 0:
         print("Found Cat")
+        prediction = 'Cat'
     else:
         print("Found Dog")
+        prediction = 'Dog'
+    
+    job_id = str(os.environ['PBS_JOBID']).split('.')[0]
+    output_path = args.output
+    print("This is output path: ", output_path)
+    if not os.path.exists(output_path):
+        try:
+            os.makedirs(output_path)
+        except OSError:
+            print(" Failed to Create Directory %s" % output_path)
+        else:
+            print("Output directory %s was successfully created" % output_path)
+    with open(os.path.join(output_path, f'stats_{job_id}.txt'), 'w') as f:
+        f.write('{:.3g} \n'.format(fps))
+        f.write('{:.3g} \n'.format(elapsed * 1000))
+        f.write('{} \n'.format(prediction))
+    
         
 if __name__ == "__main__":
     args = build_argparser().parse_args()
