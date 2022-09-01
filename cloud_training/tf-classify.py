@@ -6,6 +6,7 @@ from PIL import Image
 import argparse
 import sys
 import os
+import json
 
 def build_argparser():
     """ Build argument parser.
@@ -38,6 +39,9 @@ def main(args):
     frame = cv2.imread(args.input)
 
     t = tf.convert_to_tensor(preprocess_image(frame, input_height=180, input_width=180))
+    
+    with open('model_classes.json') as f:
+        label_data = json.load(f)
 
     # warmup iterations
     for _ in range(5):
@@ -45,11 +49,15 @@ def main(args):
 
     start = time.time()
     results = model(t)
-    print('Results: {}'.format(results))
+    # predict = model.predict(t)    
+    scores, class_ids = tf.math.top_k(results, k=len(label_data['labels']), sorted=True)
     elapsed = time.time() - start
     fps = 1 / elapsed
     print(f'FPS: %.2f fps' % fps)
     print(f'Inference time: %.2f ms' % (elapsed * 1000))
+    for score, class_id in zip(scores[0], class_ids[0]):
+        score = score.numpy()
+        print('Prediction: {}, {}'.format(label_data['labels'][class_id], score))
     
     job_id = str(os.environ['PBS_JOBID']).split('.')[0]
     output_path = args.output

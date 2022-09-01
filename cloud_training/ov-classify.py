@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import time
 import os
+import json
 
 
 
@@ -51,15 +52,14 @@ def main(args):
     fps = 1 / elapsed
     print(f'FPS: %.2f ' % fps)
     print(f'Inference time: %.2f ms' % (elapsed * 1000))
-
+    with open('model_classes.json') as f:
+        label_data = json.load(f)
+        
     index = np.argmax(results)
-    if index == 0:
-        print("Found Cat")
-        prediction = 'Cat'
-    else:
-        print("Found Dog")
-        prediction = 'Dog'
-    
+    labels_list = list(label_data['labels'])
+    prediction = labels_list[index]
+    print('Prediction: {}'.format(prediction))
+
     job_id = str(os.environ['PBS_JOBID']).split('.')[0]
     output_path = args.output
     print("This is output path: ", output_path)
