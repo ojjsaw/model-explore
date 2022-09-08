@@ -19,6 +19,21 @@ def build_argparser():
   
     return parser
 
+def append_value(dict_obj, key, value):
+    # Check if key exist in dict or not
+    if key in dict_obj:
+        # Key exist in dict.
+        # Check if type of value of key is list or not
+        if not isinstance(dict_obj[key], list):
+            # If type is not list then make it list
+            dict_obj[key] = [dict_obj[key]]
+        # Append the value in list
+        dict_obj[key].append(value)
+    else:
+        # As key is not in dict,
+        # so, add key-value pair
+        dict_obj[key] = value
+
 def preprocess_image(frame,
                      input_height=299,
                      input_width=299,
@@ -40,8 +55,11 @@ def main(args):
 
     t = tf.convert_to_tensor(preprocess_image(frame, input_height=180, input_width=180))
     
-    with open('model_classes.json') as f:
-        label_data = json.load(f)
+    label_data = {}
+    with open('model_classes.txt') as f:
+        lines = f.read().splitlines()
+    for i in range(0, len(lines)):
+        append_value(label_data, 'labels', lines[i])
 
     # warmup iterations
     for _ in range(5):
@@ -57,7 +75,9 @@ def main(args):
     print(f'Inference time: %.2f ms' % (elapsed * 1000))
     for score, class_id in zip(scores[0], class_ids[0]):
         score = score.numpy()
-        print('Prediction: {}, {}'.format(label_data['labels'][class_id], score))
+        # print('Prediction: {}, {}'.format(label_data['labels'][class_id], score))
+    index = np.argmax(scores)
+    print('Prediction {}'.format(lines[index]))
     
     job_id = str(os.environ['PBS_JOBID']).split('.')[0]
     output_path = args.output
@@ -72,6 +92,7 @@ def main(args):
     with open(os.path.join(output_path, f'stats_{job_id}.txt'), 'w') as f:
         f.write('{:.3g} \n'.format(fps))
         f.write('{:.3g} \n'.format(elapsed * 1000))
+        f.write('{} \n'.format(lines[index]))
 
     
 if __name__ == "__main__":
