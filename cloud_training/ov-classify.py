@@ -24,6 +24,21 @@ def build_argparser():
   
     return parser
 
+def append_value(dict_obj, key, value):
+    # Check if key exist in dict or not
+    if key in dict_obj:
+        # Key exist in dict.
+        # Check if type of value of key is list or not
+        if not isinstance(dict_obj[key], list):
+            # If type is not list then make it list
+            dict_obj[key] = [dict_obj[key]]
+        # Append the value in list
+        dict_obj[key].append(value)
+    else:
+        # As key is not in dict,
+        # so, add key-value pair
+        dict_obj[key] = value
+
 def main(args):
     input_mean=0
     input_std=255
@@ -52,12 +67,14 @@ def main(args):
     fps = 1 / elapsed
     print(f'FPS: %.2f ' % fps)
     print(f'Inference time: %.2f ms' % (elapsed * 1000))
-    with open('model_classes.json') as f:
-        label_data = json.load(f)
+    label_data = {}
+    with open('model_classes.txt') as f:
+        lines = f.read().splitlines()
+    for i in range(0, len(lines)):
+        append_value(label_data, 'labels', lines[i])
         
     index = np.argmax(results)
-    labels_list = list(label_data['labels'])
-    prediction = labels_list[index]
+    prediction = lines[index]
     print('Prediction: {}'.format(prediction))
 
     job_id = str(os.environ['PBS_JOBID']).split('.')[0]
