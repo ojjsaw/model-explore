@@ -34,12 +34,12 @@ def append_value(dict_obj, key, value):
         # so, add key-value pair
         dict_obj[key] = value
 
-def preprocess_image(frame,
+def preprocess_image(image,
                      input_height=299,
                      input_width=299,
                      input_mean=0,
                      input_std=255):
-    image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = Image.fromarray(image)
     resized_image = image.resize((input_height, input_width))
     resized_image = np.asarray(resized_image, np.float32)
@@ -51,12 +51,12 @@ def main(args):
 
     model = tf.saved_model.load("000000001")
     # input_img_path = "./inference_images/401.jpg"
-    frame = cv2.imread(args.input)
+    image = cv2.imread(args.input)
 
-    t = tf.convert_to_tensor(preprocess_image(frame, input_height=180, input_width=180))
+    t = tf.convert_to_tensor(preprocess_image(image, input_height=180, input_width=180))
     
     label_data = {}
-    with open('model_classes.txt') as f:
+    with open('000000001/labels.txt') as f:
         lines = f.read().splitlines()
     for i in range(0, len(lines)):
         append_value(label_data, 'labels', lines[i])
@@ -67,7 +67,7 @@ def main(args):
 
     start = time.time()
     results = model(t)
-    # predict = model.predict(t)    
+    print('results: {}'.format(results))
     scores, class_ids = tf.math.top_k(results, k=len(label_data['labels']), sorted=True)
     elapsed = time.time() - start
     fps = 1 / elapsed
@@ -76,7 +76,7 @@ def main(args):
     for score, class_id in zip(scores[0], class_ids[0]):
         score = score.numpy()
         # print('Prediction: {}, {}'.format(label_data['labels'][class_id], score))
-    index = np.argmax(scores)
+    index = np.argmax(results)
     print('Prediction {}'.format(lines[index]))
     
     job_id = str(os.environ['PBS_JOBID']).split('.')[0]
@@ -93,6 +93,11 @@ def main(args):
         f.write('{:.3g} \n'.format(fps))
         f.write('{:.3g} \n'.format(elapsed * 1000))
         f.write('{} \n'.format(lines[index]))
+        
+    x,y,w,h = 0,0,image.shape[0], 20
+    cv2.rectangle(image, (x, x), (x + w, y + h), (0,0,0), -1)
+    cv2.putText(image, "Prediction: {}, {:.3g}".format(lines[index], max(results[0])), (x + int(w/20),y + int(h/2)), cv2.FONT_HERSHEY_SIMPLEX, (image.shape[0]/500), (255, 255, 255), 1)
+    cv2.imwrite(os.path.join(output_path, f'prediction_{job_id}.jpg'), image)
 
     
 if __name__ == "__main__":

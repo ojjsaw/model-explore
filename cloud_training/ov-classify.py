@@ -68,14 +68,17 @@ def main(args):
     print(f'FPS: %.2f ' % fps)
     print(f'Inference time: %.2f ms' % (elapsed * 1000))
     label_data = {}
-    with open('model_classes.txt') as f:
+    with open('000000001/labels.txt') as f:
         lines = f.read().splitlines()
     for i in range(0, len(lines)):
         append_value(label_data, 'labels', lines[i])
         
     index = np.argmax(results)
+    print ('Results: {}'.format(results))
+    print('Score: {}'.format(max(results[0])))
     prediction = lines[index]
     print('Prediction: {}'.format(prediction))
+
 
     job_id = str(os.environ['PBS_JOBID']).split('.')[0]
     output_path = args.output
@@ -91,6 +94,11 @@ def main(args):
         f.write('{:.3g} \n'.format(fps))
         f.write('{:.3g} \n'.format(elapsed * 1000))
         f.write('{} \n'.format(prediction))
+        
+    x,y,w,h = 0,0,image.shape[0], int(image.shape[0]/8)
+    cv2.rectangle(image, (x, x), (x + w, y + h), (0,0,0), -1)
+    cv2.putText(image, "Prediction: {}, {}".format(prediction, max(results[0])), (x + int(w/20),y + int(h/2)), cv2.FONT_HERSHEY_SIMPLEX, (image.shape[0]/500), (255, 255, 255), 1)
+    cv2.imwrite(os.path.join(output_path, f'prediction_{job_id}.jpg'), image)
     
         
 if __name__ == "__main__":
