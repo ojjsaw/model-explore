@@ -109,20 +109,24 @@ def main(args):
         print('Score for {}: {}'.format(ts[i],max(results[0])))
         print('Predictionfor {}: {}'.format(ts[i],lines[index]))
     
-        job_id = str(os.environ['PBS_JOBID']).split('.')[0]
-        output_path = args.output
-        print("This is output path: ", output_path)
-        if not os.path.exists(output_path):
-            try:
-                os.makedirs(output_path)
-            except OSError:
-                print(" Failed to Create Directory %s" % output_path)
-            else:
-                print("Output directory %s was successfully created" % output_path)
-        with open(os.path.join(output_path, f'stats_{job_id}.txt'), 'w') as f:
-            f.write('{:.3g} \n'.format(fps))
-            f.write('{:.3g} \n'.format(elapsed * 1000))
-            # f.write('{} \n'.format(lines[index]))
+    avg_elapsed = total_elapsed/len(ts)
+    fps = 1 / avg_elapsed
+    print(f'FPS: %.2f ' % fps)
+    print(f'Inference time: %.2f ms' % (avg_elapsed * 1000))    
+    job_id = str(os.environ['PBS_JOBID']).split('.')[0]
+    output_path = args.output
+    print("This is output path: ", output_path)
+    if not os.path.exists(output_path):
+        try:
+            os.makedirs(output_path)
+        except OSError:
+            print(" Failed to Create Directory %s" % output_path)
+        else:
+            print("Output directory %s was successfully created" % output_path)
+    with open(os.path.join(output_path, f'stats_{job_id}.txt'), 'w') as f:
+        f.write('{:.3g} \n'.format(fps))
+        f.write('{:.3g} \n'.format(elapsed * 1000))
+        # f.write('{} \n'.format(lines[index]))
         
         x,y,w,h = 0,0,image.shape[0], 20
         cv2.rectangle(image, (x, x), (x + w, y + h), (0,0,0), -1)
