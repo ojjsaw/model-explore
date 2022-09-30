@@ -59,14 +59,6 @@ def main(args):
 
     input_layer = compiled_model.input(0)
     output_layer = compiled_model.output(0)
-
-    # # image_filename = "./inference_images/401.jpg"
-    # image = cv2.imread(args.input)
-    # N, H, W, C = input_layer.shape
-    # resized_image = cv2.resize(src=image, dsize=(W, H))
-    # resized_image = np.asarray(resized_image, np.float32)
-    # normalized_image = (resized_image - input_mean) / input_std
-    # input_data = np.expand_dims(resized_image, 0)
     
     main_dir = args.input
     all_classes_folders = []
@@ -86,9 +78,7 @@ def main(args):
         resized_image = np.asarray(resized_image, np.float32)
         normalized_image = (resized_image - input_mean) / input_std
         ts.append(np.expand_dims(resized_image, 0))
-        # input_data = np.expand_dims(input_data, 0)
-    # print('Input Data: {}'.format(input_data))
-    # print('ts shape: {}'.format(ts.shape))
+
     label_data = {}
     with open('000000001/labels.txt') as f:
         lines = f.read().splitlines()
