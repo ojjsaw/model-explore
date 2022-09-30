@@ -7,6 +7,7 @@ import argparse
 import sys
 import os
 import json
+import glob
 
 def build_argparser():
     """ Build argument parser.
@@ -52,7 +53,15 @@ def main(args):
 
     model = tf.saved_model.load("000000001")
     # input_img_path = "./inference_images/401.jpg"
-    
+    output_path = args.output    
+    print("This is output path: ", output_path)
+    if not os.path.exists(output_path):
+        try:
+            os.makedirs(output_path)
+        except OSError:
+            print(" Failed to Create Directory %s" % output_path)
+        else:
+            print("Output directory %s was successfully created" % output_path)
     main_dir = args.input
     all_classes_folders = []
     images_path = []
@@ -68,8 +77,8 @@ def main(args):
     
     # prepare input images
     ts = []
-    for x in INPUT_IMG_PATHS:
-        np_img = preprocess_image(cv2.imread(x), input_height=180, input_width=180)
+    for n in images_path:
+        np_img = preprocess_image(cv2.imread(n), input_height=180, input_width=180)
         ts.append(tf.convert_to_tensor(np_img))
 
     # t = tf.convert_to_tensor(preprocess_image(image, input_height=180, input_width=180))
@@ -86,7 +95,7 @@ def main(args):
 
     # measure inference
     total_elapsed = 0
-    for i in range(len(ts)):
+    for i in range(len(images_path)):
         start = time.time()
         results = model(ts[i])
         elapsed = time.time() - start
@@ -104,34 +113,40 @@ def main(args):
     # for score, class_id in zip(scores[0], class_ids[0]):
     #     score = score.numpy()
         # print('Prediction: {}, {}'.format(label_data['labels'][class_id], score))
+        print ('Result: {}'.format(results[0]))
+        res = list(results[0])
+        print('res :{}'.format(res))
         index = np.argmax(results)
-        print ('Results for {}: {}'.format(ts[i],results))
-        print('Score for {}: {}'.format(ts[i],max(results[0])))
-        print('Predictionfor {}: {}'.format(ts[i],lines[index]))
+        print('ArgMAX: {}'.format(np.argmax(results[0][0])))
+        # max_value = max(results[0])
+        # index = results[0].index(max_value)
+        print ('index: {}'.format(index))
+        # print ('Results for {}: {}'.format(images_path[i],results))
+        # prediction = lines[index]
+        print('Prediction for {}: {}'.format(images_path[i],lines[index]))
+        print('Score for {}: {:.3g}'.format(images_path[i],max(results[0])))
+
+        image = cv2.imread(images_path[i])
+        # print(image)
+        x,y,w,h = 0,0,image.shape[0], int(image.shape[0]/8)
+        cv2.rectangle(image, (x, x), (x + w, y + h), (0,0,0), -1)
+        cv2.putText(image, "Prediction: {}, {:.3g}".format(lines[index], max(results[0])), (x + int(w/20),y + int(h/2)), cv2.FONT_HERSHEY_SIMPLEX, (image.shape[0]/500), (255, 255, 255), 1)
+        cv2.imwrite(os.path.join(output_path, f'prediction_{i}.jpg'), image)
+        # print ('Writing Image')
     
     avg_elapsed = total_elapsed/len(ts)
     fps = 1 / avg_elapsed
     print(f'FPS: %.2f ' % fps)
     print(f'Inference time: %.2f ms' % (avg_elapsed * 1000))    
     job_id = str(os.environ['PBS_JOBID']).split('.')[0]
-    output_path = args.output
-    print("This is output path: ", output_path)
-    if not os.path.exists(output_path):
-        try:
-            os.makedirs(output_path)
-        except OSError:
-            print(" Failed to Create Directory %s" % output_path)
-        else:
-            print("Output directory %s was successfully created" % output_path)
+
+
     with open(os.path.join(output_path, f'stats_{job_id}.txt'), 'w') as f:
         f.write('{:.3g} \n'.format(fps))
         f.write('{:.3g} \n'.format(elapsed * 1000))
         # f.write('{} \n'.format(lines[index]))
         
-        x,y,w,h = 0,0,image.shape[0], 20
-        cv2.rectangle(image, (x, x), (x + w, y + h), (0,0,0), -1)
-        cv2.putText(image, "Prediction: {}, {:.3g}".format(lines[index], max(results[0])), (x + int(w/20),y + int(h/2)), cv2.FONT_HERSHEY_SIMPLEX, (image.shape[0]/500), (255, 255, 255), 1)
-        cv2.imwrite(os.path.join(output_path, f'prediction_{ts[i]}.jpg'), image)
+
 
     
 if __name__ == "__main__":
