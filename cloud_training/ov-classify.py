@@ -113,10 +113,7 @@ def main(args):
     with open(os.path.join(output_path, f'stats_{job_id}.txt'), 'w') as f:
         f.write('{:.3g} \n'.format(fps))
         f.write('{:.3g} \n'.format(avg_elapsed * 1000))
-        # f.write('{} \n'.format(prediction))
-        
-
-    
+     
         
 if __name__ == "__main__":
     args = build_argparser().parse_args()
